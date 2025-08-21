@@ -22,7 +22,7 @@ const firebaseConfig = {
 // 3. Inisialisasi Firebase dan Realtime Database
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-// Path diubah menjadi '/log' sesuai konfirmasi sebelumnya
+// Path diubah menjadi '/log-temp-v1' sesuai pembaruan Anda
 const weatherDataRef = ref(db, 'log-temp-v1');
 
 
@@ -49,17 +49,53 @@ const ChartCard = ({ title, children }) => (
     </div>
 );
 
+// --- Komponen Tooltip Kustom ---
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const date = new Date(data.fullTimestamp);
+    
+    // **FIX: Format tanggal sesuai permintaan DD/MM/YYYY | HH:MM PM**
+    const pad = (n) => n < 10 ? '0' + n : n;
+    const day = pad(date.getDate());
+    const month = pad(date.getMonth() + 1);
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = pad(date.getMinutes());
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // Jam '0' harus menjadi '12'
+    const paddedHours = pad(hours);
+    const formattedDate = `${day}/${month}/${year} | ${paddedHours}:${minutes} ${ampm}`;
+
+    const value = payload[0].value;
+    const name = payload[0].dataKey === 'suhu' ? 'Suhu' : 'Kelembaban';
+    const unit = payload[0].dataKey === 'suhu' ? '°C' : '%';
+
+    return (
+      <div className="p-2 bg-slate-800 border border-slate-600 rounded-md shadow-lg text-sm">
+        {/* **FIX: Menghilangkan cetak tebal (font-bold)** */}
+        <p className="label text-slate-300 mb-1">{formattedDate}</p>
+        <p className="intro" style={{ color: payload[0].stroke }}>
+          {`${name}: ${value} ${unit}`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 
 // --- Komponen Utama Aplikasi ---
 export default function WeatherDashboard() {
   const [weatherData, setWeatherData] = useState([]);
   const [currentTemp, setCurrentTemp] = useState('N/A');
   const [currentHumidity, setCurrentHumidity] = useState('N/A');
+  const [lastUpdated, setLastUpdated] = useState('Menunggu data...');
   const [isLoading, setIsLoading] = useState(true);
 
   // useEffect untuk mendengarkan data real-time dari Realtime Database
   useEffect(() => {
-    // **FIX: Mengambil 30 data terakhir untuk grafik yang lebih detail**
     const recentDataQuery = query(weatherDataRef, orderByChild('waktu'), limitToLast(30));
 
     const unsubscribe = onValue(recentDataQuery, (snapshot) => {
@@ -67,19 +103,28 @@ export default function WeatherDashboard() {
       if (data) {
         const dataFromRTDB = Object.keys(data).map(key => {
             const record = data[key];
-            // Menggunakan nama field 'suhu' dan 'kelembaban'
             const temp = typeof record.suhu === 'number' ? record.suhu : 0;
             const hum = typeof record.kelembaban === 'number' ? record.kelembaban : 0;
             
-            // Memformat 'waktu' (string) menjadi tampilan jam
-            const timeValue = record.waktu ? new Date(record.waktu).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+            let timeValue = 'N/A';
+            if (record.waktu) {
+                const dateObj = new Date(record.waktu);
+                const pad = (n) => n < 10 ? '0' + n : n;
+                let hours = dateObj.getHours();
+                const minutes = pad(dateObj.getMinutes());
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // Jam '0' harus menjadi '12'
+                const paddedHours = pad(hours);
+                timeValue = `${paddedHours}:${minutes} ${ampm}`;
+            }
 
             return {
               id: key,
-              // Menggunakan nama field yang benar untuk grafik
               suhu: temp,
               kelembaban: hum,
-              time: timeValue
+              time: timeValue,
+              fullTimestamp: record.waktu
             };
         });
         
@@ -89,6 +134,13 @@ export default function WeatherDashboard() {
           const latestData = dataFromRTDB[dataFromRTDB.length - 1];
           setCurrentTemp(typeof latestData.suhu === 'number' ? latestData.suhu.toFixed(1) : 'N/A');
           setCurrentHumidity(typeof latestData.kelembaban === 'number' ? latestData.kelembaban.toFixed(1) : 'N/A');
+          
+          const latestDate = new Date(latestData.fullTimestamp);
+          const formattedLastUpdate = latestDate.toLocaleString('id-ID', {
+              dateStyle: 'full',
+              timeStyle: 'long'
+          });
+          setLastUpdated(`Data terakhir: ${formattedLastUpdate}`);
         }
       }
       setIsLoading(false);
@@ -102,7 +154,6 @@ export default function WeatherDashboard() {
 
   // Fungsi untuk menambahkan data cuaca palsu ke Realtime DB
   const addMockData = async () => {
-    // Fungsi bantuan untuk format tanggal YYYY-MM-DD HH:MM:SS
     const getFormattedTimestamp = () => {
         const d = new Date();
         const pad = (n) => n < 10 ? '0' + n : n;
@@ -113,7 +164,6 @@ export default function WeatherDashboard() {
       const newTemp = parseFloat((Math.random() * 15 + 18).toFixed(2));
       const newHumidity = parseFloat((Math.random() * 30 + 60).toFixed(2));
       
-      // Menggunakan nama field yang benar saat menambah data
       await push(weatherDataRef, {
         suhu: newTemp,
         kelembaban: newHumidity,
@@ -157,7 +207,7 @@ export default function WeatherDashboard() {
           <header className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-3xl font-bold text-white">Dashboard</h2>
-              <p className="text-slate-400">Real-time temperature and humidity data from Firebase</p>
+              <p className="text-slate-400">{lastUpdated}</p>
             </div>
              <div className="flex items-center gap-4">
                <button className="relative p-2 rounded-full hover:bg-slate-700">
@@ -184,7 +234,6 @@ export default function WeatherDashboard() {
               <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
                 <ChartCard title="Temperature Over Time">
                      <ResponsiveContainer>
-                        {/* Menggunakan 'suhu' sebagai dataKey */}
                         <AreaChart data={weatherData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f97316" stopOpacity={0.7}/><stop offset="95%" stopColor="#f97316" stopOpacity={0}/></linearGradient>
@@ -192,7 +241,7 @@ export default function WeatherDashboard() {
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                             <XAxis dataKey="time" stroke="#94a3b8" fontSize={12} />
                             <YAxis stroke="#94a3b8" fontSize={12} unit="°C" domain={['dataMin - 2', 'dataMax + 2']}/>
-                            <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', borderColor: '#475569', color: '#e2e8f0' }}/>
+                            <Tooltip content={<CustomTooltip />} />
                             <Area type="monotone" dataKey="suhu" stroke="#f97316" fill="url(#colorTemp)" />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -200,7 +249,6 @@ export default function WeatherDashboard() {
                 
                 <ChartCard title="Humidity Over Time">
                      <ResponsiveContainer>
-                        {/* Menggunakan 'kelembaban' sebagai dataKey */}
                         <AreaChart data={weatherData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorHumidity" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#38bdf8" stopOpacity={0.7}/><stop offset="95%" stopColor="#38bdf8" stopOpacity={0}/></linearGradient>
@@ -208,7 +256,7 @@ export default function WeatherDashboard() {
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                             <XAxis dataKey="time" stroke="#94a3b8" fontSize={12} />
                             <YAxis stroke="#94a3b8" fontSize={12} unit="%" domain={['dataMin - 5', 'dataMax + 5']}/>
-                            <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', borderColor: '#475569', color: '#e2e8f0' }}/>
+                            <Tooltip content={<CustomTooltip />} />
                             <Area type="monotone" dataKey="kelembaban" stroke="#38bdf8" fill="url(#colorHumidity)" />
                         </AreaChart>
                     </ResponsiveContainer>
