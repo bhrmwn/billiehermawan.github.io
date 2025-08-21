@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/billiehermawan.github.io/static/css/main.77bbd4d3.css",
-    "main.js": "/billiehermawan.github.io/static/js/main.998993ae.js",
+    "main.css": "/billiehermawan.github.io/static/css/main.1d5351d9.css",
+    "main.js": "/billiehermawan.github.io/static/js/main.e1bcfbde.js",
     "static/js/453.0f0c1c23.chunk.js": "/billiehermawan.github.io/static/js/453.0f0c1c23.chunk.js",
     "index.html": "/billiehermawan.github.io/index.html",
-    "main.77bbd4d3.css.map": "/billiehermawan.github.io/static/css/main.77bbd4d3.css.map",
-    "main.998993ae.js.map": "/billiehermawan.github.io/static/js/main.998993ae.js.map",
+    "main.1d5351d9.css.map": "/billiehermawan.github.io/static/css/main.1d5351d9.css.map",
+    "main.e1bcfbde.js.map": "/billiehermawan.github.io/static/js/main.e1bcfbde.js.map",
     "453.0f0c1c23.chunk.js.map": "/billiehermawan.github.io/static/js/453.0f0c1c23.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.77bbd4d3.css",
-    "static/js/main.998993ae.js"
+    "static/css/main.1d5351d9.css",
+    "static/js/main.e1bcfbde.js"
   ]
 }
