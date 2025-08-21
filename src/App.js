@@ -1,5 +1,5 @@
 import React from 'react';
-import WeatherDashboard from './WeatherDashboard_v2'; // Sesuaikan path jika perlu
+import WeatherDashboard from './WeatherDashboard'; // Sesuaikan path jika perlu
 
 function App() {
   return (

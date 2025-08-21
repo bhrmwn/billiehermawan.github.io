@@ -23,7 +23,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 // Path diubah menjadi '/log-temp-v1' sesuai pembaruan Anda
-const weatherDataRef = ref(db, 'log-temp-v1');
+const weatherDataRef = ref(db, 'log-am2301-v2');
 
 
 // --- Komponen Anak (Tidak Berubah) ---
@@ -55,18 +55,14 @@ const CustomTooltip = ({ active, payload }) => {
     const data = payload[0].payload;
     const date = new Date(data.fullTimestamp);
     
-    // **FIX: Format tanggal sesuai permintaan DD/MM/YYYY | HH:MM PM**
     const pad = (n) => n < 10 ? '0' + n : n;
     const day = pad(date.getDate());
     const month = pad(date.getMonth() + 1);
     const year = date.getFullYear();
-    let hours = date.getHours();
+    const hours = pad(date.getHours());
     const minutes = pad(date.getMinutes());
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // Jam '0' harus menjadi '12'
-    const paddedHours = pad(hours);
-    const formattedDate = `${day}/${month}/${year} | ${paddedHours}:${minutes} ${ampm}`;
+    const seconds = pad(date.getSeconds());
+    const formattedDate = `${day}/${month}/${year} | ${hours}.${minutes}.${seconds} WIB`;
 
     const value = payload[0].value;
     const name = payload[0].dataKey === 'suhu' ? 'Suhu' : 'Kelembaban';
@@ -74,7 +70,6 @@ const CustomTooltip = ({ active, payload }) => {
 
     return (
       <div className="p-2 bg-slate-800 border border-slate-600 rounded-md shadow-lg text-sm">
-        {/* **FIX: Menghilangkan cetak tebal (font-bold)** */}
         <p className="label text-slate-300 mb-1">{formattedDate}</p>
         <p className="intro" style={{ color: payload[0].stroke }}>
           {`${name}: ${value} ${unit}`}
@@ -106,17 +101,14 @@ export default function WeatherDashboard() {
             const temp = typeof record.suhu === 'number' ? record.suhu : 0;
             const hum = typeof record.kelembaban === 'number' ? record.kelembaban : 0;
             
+            // **FIX: Mengubah format waktu untuk sumbu X menjadi HH:MM WIB**
             let timeValue = 'N/A';
             if (record.waktu) {
                 const dateObj = new Date(record.waktu);
                 const pad = (n) => n < 10 ? '0' + n : n;
-                let hours = dateObj.getHours();
+                const hours = pad(dateObj.getHours());
                 const minutes = pad(dateObj.getMinutes());
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                hours = hours % 12;
-                hours = hours ? hours : 12; // Jam '0' harus menjadi '12'
-                const paddedHours = pad(hours);
-                timeValue = `${paddedHours}:${minutes} ${ampm}`;
+                timeValue = `${hours}:${minutes}`;
             }
 
             return {
